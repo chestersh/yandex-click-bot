@@ -6,7 +6,7 @@
 ```postgres-psql
 create table adhoc_parser.audit_yandex_bot (
 	id serial,
-	url varchar(1024) not null,
+	url text not null,
 	report_date date not null,
 	parse_time timestamp not null,
 	has_403 varchar(1) not null,

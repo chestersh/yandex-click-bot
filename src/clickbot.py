@@ -80,6 +80,7 @@ class DefaultDriver:
     @timer_logger
     def fetch_single_page(self, string):
         self.chrome.get(self.default_url)
+        time.sleep(2.5)
         self.chrome.find_element_by_xpath('//*[@id="text"]').send_keys(f'{string}\n')
         html = self.chrome.page_source
         return html
@@ -97,7 +98,54 @@ class DefaultDriver:
             self.get_data_from_html(self.fetch_single_page(i))
 
 
-kw = ['банкротство юридических лиц обнинск', 'банкротство граждан']
+kw = [
+    'банкротство юридических лиц',
+    'банкротство юридических лиц калужская область',
+    'банкротство юридических лиц обнинск',
+    'банкротство юридических лиц Боровск',
+    'банкротство юридических лиц Наро-Фоминск',
+    'банкротство юридических лиц Малоярославец',
+
+    'банкротство граждан',
+    'банкротство граждан обнинск',
+    'банкротство граждан Наро-Фоминск',
+    'банкротство граждан Боровск',
+    'банкротство граждан калужская область',
+    'банкротство граждан Малоярославец',
+    'банкротство граждан Балабаново',
+    'банкротство граждан Ермолино',
+
+    'Законное списание долгов',
+    'Законное списание долгов Обнинск',
+    'Законное списание долгов Наро-Фоминск',
+    'Законное списание долгов Боровск',
+    'Законное списание долгов Ермолино',
+    'Законное списание долгов калужская область',
+    'Законное списание долгов Малоярославец',
+    'Законное списание долгов Балабаново',
+
+    'Списать долги',
+    'Списать долги Обнинск',
+    'Списать долги Ермолино',
+    'Списать долги Боровск',
+    'Списать долги Наро-Фоминск',
+    'Списать долги Балабаново',
+    'Списать долги Малоярославец',
+    'Списать долги калужская облсть',
+
+    'Как списать долги',
+    'Как списать долги обнинск',
+    'Как списать долги Наро-Фоминск',
+    'Как списать долги Боровск',
+    'Как списать долги Балабаново',
+    'Как списать долги Ермолино',
+    'Как списать долги Малоярославец',
+    'Как списать долги калужская область',
+
+    'Банкротство физических лиц минусы',
+    'Справка по банкротству физических лиц',
+
+]
 
 
 class TorDriver(DefaultDriver):
@@ -144,7 +192,7 @@ class TorDriver(DefaultDriver):
             full_page = self.chrome.find_element_by_tag_name('html')
             page_elements = self.chrome.find_elements_by_css_selector('div[class]')
 
-            for element in page_elements[:3]:
+            for element in page_elements[:10]:
                 self.move_with_driver(element, full_page)
                 # self.move_with_javascript(element, full_page)
         else:
@@ -155,15 +203,16 @@ class TorDriver(DefaultDriver):
         self.audit(self.chrome.current_url, report_date, parse_time, has_error, result_time)
 
 
-prepare = DefaultDriver(kw)
-prepare.init()
-prepare.x()
-data = prepare.take_promotion_urls()
-prepare.close()
+while True:
+    prepare = DefaultDriver(kw)
+    prepare.init()
+    prepare.x()
+    data = prepare.take_promotion_urls()
+    prepare.close()
 
-
-tor = TorDriver(kw)
-tor.init()
-for url in data:
-    tor.start(url)
-tor.close()
+    tor = TorDriver(kw)
+    tor.init()
+    for url in data:
+        tor.start(url)
+    tor.close()
+    time.sleep(900)
