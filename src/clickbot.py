@@ -63,7 +63,7 @@ class DefaultDriver:
     @timer_logger
     def init(self):
         self.chrome = webdriver.Chrome(options=self.options)
-        self.chrome.implicitly_wait(1000)
+        self.chrome.implicitly_wait(200)
         time.sleep(2)
 
     def close(self) -> None:
@@ -88,9 +88,12 @@ class DefaultDriver:
     @timer_logger
     def get_data_from_html(self, raw_html):
         soup = bs(raw_html, 'lxml')
-        search_array = soup.find('div', class_='content__left').find('ul').find_all('li')
-        array = [j for j in search_array if j.get('data-cid') is not None and j.find('div', class_='organic__url-text') is not None and 'fl-bankrotstvo.ru' not in j.find('div', class_='organic__url-text').text and 'prodolgi40.ru' not in j.find('div', class_='organic__url-text').text]
-        [self.array.append(url.find('div').find('a').get('href')) for url in array if 'yabs.yandex.ru' in url.find('div').find('a').get('href')]
+        try:
+            search_array = soup.find('div', class_='content__left').find('ul').find_all('li')
+            array = [j for j in search_array if j.get('data-cid') is not None and j.find('div', class_='organic__url-text') is not None and 'fl-bankrotstvo.ru' not in j.find('div', class_='organic__url-text').text and 'prodolgi40.ru' not in j.find('div', class_='organic__url-text').text]
+            [self.array.append(url.find('div').find('a').get('href')) for url in array if 'yabs.yandex.ru' in url.find('div').find('a').get('href')]
+        except Exception as e:
+            self.log.error(f'at this moment parser cant find url list from yandex page, pass with ERROR: {e}')
 
     @timer_logger
     def x(self):
@@ -98,7 +101,7 @@ class DefaultDriver:
             self.get_data_from_html(self.fetch_single_page(i))
 
 
-kw = [
+kw_temp = [
     'банкротство юридических лиц',
     'банкротство юридических лиц калужская область',
     'банкротство юридических лиц обнинск',
@@ -147,6 +150,11 @@ kw = [
 
 ]
 
+kw = [
+    'банкротство юридических лиц обнинск',
+    'банкротство граждан',
+]
+
 
 class TorDriver(DefaultDriver):
 
@@ -166,13 +174,13 @@ class TorDriver(DefaultDriver):
                 html.send_keys(Keys.ARROW_UP)
             html.send_keys(Keys.PAGE_DOWN)
             html.send_keys(Keys.PAGE_DOWN)
-            time.sleep(0.3)
+            time.sleep(0.1)
         except Exception as e:
             pass
 
     def move_with_javascript(self, item, html):
         try:
-            self.chrome.execute_script('"arguments[0].scrollIntoView();", j')
+            self.chrome.execute_script(f'"arguments[0].scrollIntoView();", {item}')
             self.action.move_to_element(item).perform()
             html.send_keys(Keys.ESCAPE)
             time.sleep(0.2)
@@ -185,22 +193,27 @@ class TorDriver(DefaultDriver):
         parse_time = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         start = time.time()
         self.action = ActionChains(self.chrome)
-        self.chrome.get(url)
-        self.log.info(f'Current url parserd now: {self.chrome.current_url}')
-        if '403 Forbidden' not in self.chrome.page_source:
-            has_error = 'N'
-            full_page = self.chrome.find_element_by_tag_name('html')
-            page_elements = self.chrome.find_elements_by_css_selector('div[class]')
+        try:
+            self.chrome.get(url)
+            self.log.info(f'Current url parserd now: {self.chrome.current_url}')
+            if 'yandex.ru/uslugi/' not in self.chrome.current_url and 'docs.google.com/forms/' not in self.chrome.current_url:
+                self.log.warning('passed url with yandex.ru/uslugi/ or docs.google.com/forms/')
+                if '403 Forbidden' not in self.chrome.page_source and '502 Bad Gateway' not in self.chrome.page_source:
+                    has_error = 'N'
+                    full_page = self.chrome.find_element_by_tag_name('html')
+                    page_elements = self.chrome.find_elements_by_css_selector('div[class]')
 
-            for element in page_elements[:10]:
-                self.move_with_driver(element, full_page)
-                # self.move_with_javascript(element, full_page)
-        else:
-            self.log.error('403 Forbidden')
-            has_error = 'Y'
-        result_time = round(time.time() - start)
+                    for element in page_elements[:8]:
+                        self.move_with_driver(element, full_page)
+                        # self.move_with_javascript(element, full_page)
+                else:
+                    self.log.error('403 Forbidden / 502 Bad Gateway')
+                    has_error = 'Y'
+                result_time = round(time.time() - start)
 
-        self.audit(self.chrome.current_url, report_date, parse_time, has_error, result_time)
+                self.audit(self.chrome.current_url, report_date, parse_time, has_error, result_time)
+        except Exception as e:
+            self.log.error(f'cant get page info, pass it with ERROR: {e}')
 
 
 while True:
@@ -215,4 +228,4 @@ while True:
     for url in data:
         tor.start(url)
     tor.close()
-    time.sleep(900)
+    time.sleep(300)
