@@ -90,7 +90,7 @@ class DefaultDriver:
         soup = bs(raw_html, 'lxml')
         try:
             search_array = soup.find('div', class_='content__left').find('ul').find_all('li')
-            array = [j for j in search_array if j.get('data-cid') is not None and j.find('div', class_='organic__url-text') is not None and 'fl-bankrotstvo.ru' not in j.find('div', class_='organic__url-text').text and 'prodolgi40.ru' not in j.find('div', class_='organic__url-text').text]
+            array = [j for j in search_array if j.get('data-cid') is not None and j.find('div', class_='organic__url-text') is not None and 'fl-bankrotstvo.ru' not in j.find('div').text and 'prodolgi40.ru' not in j.find('div').text]
             [self.array.append(url.find('div').find('a').get('href')) for url in array if 'yabs.yandex.ru' in url.find('div').find('a').get('href')]
         except Exception as e:
             self.log.error(f'at this moment parser cant find url list from yandex page, pass with ERROR: {e}')
@@ -100,7 +100,8 @@ class DefaultDriver:
         for i in self.search_words:
             self.get_data_from_html(self.fetch_single_page(i))
 
-
+# #search-result > li:nth-child(3) > div > div.organic__subtitle.organic__subtitle_nowrap.typo.typo_type_greenurl > div.path.path_show-https.organic__path > a > b
+# //*[@id="search-result"]/li[1]/div/div[1]/div[1]/a/b
 kw_temp = [
     'банкротство юридических лиц',
     'банкротство юридических лиц калужская область',
@@ -197,7 +198,6 @@ class TorDriver(DefaultDriver):
             self.chrome.get(url)
             self.log.info(f'Current url parserd now: {self.chrome.current_url}')
             if 'yandex.ru/uslugi/' not in self.chrome.current_url and 'docs.google.com/forms/' not in self.chrome.current_url:
-                self.log.warning('passed url with yandex.ru/uslugi/ or docs.google.com/forms/')
                 if '403 Forbidden' not in self.chrome.page_source and '502 Bad Gateway' not in self.chrome.page_source:
                     has_error = 'N'
                     full_page = self.chrome.find_element_by_tag_name('html')
@@ -212,20 +212,21 @@ class TorDriver(DefaultDriver):
                 result_time = round(time.time() - start)
 
                 self.audit(self.chrome.current_url, report_date, parse_time, has_error, result_time)
+            self.log.warning('passed url with yandex.ru/uslugi/ or docs.google.com/forms/')
         except Exception as e:
             self.log.error(f'cant get page info, pass it with ERROR: {e}')
 
-
-while True:
-    prepare = DefaultDriver(kw)
-    prepare.init()
-    prepare.x()
-    data = prepare.take_promotion_urls()
-    prepare.close()
-
-    tor = TorDriver(kw)
-    tor.init()
-    for url in data:
-        tor.start(url)
-    tor.close()
-    time.sleep(300)
+#
+# while True:
+#     prepare = DefaultDriver(kw)
+#     prepare.init()
+#     prepare.x()
+#     data = prepare.take_promotion_urls()
+#     prepare.close()
+#
+#     tor = TorDriver(kw)
+#     tor.init()
+#     for url in data:
+#         tor.start(url)
+#     tor.close()
+#     time.sleep(300)
