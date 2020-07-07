@@ -6,6 +6,9 @@ kw_temp = [
     'банкротство граждан',
 ]
 
+test = [
+    'банкротство юридических лиц обнинск',
+]
 
 kw = [
     'банкротство юридических лиц',
@@ -68,4 +71,4 @@ while True:
     for url in data:
         tor.start(url)
     tor.close()
-    time.sleep(150)
+    time.sleep(35)
