@@ -43,6 +43,7 @@ class DefaultDriver:
         self.options.add_argument('--no-sandbox')
         self.options.add_argument('--window-size=1420,1080')
         self.options.add_argument('--headless')
+        self.options.add_argument('--disable-dev-shm-usage')
         self.options.add_argument('--disable-gpu')
         # self.chrome = webdriver.Chrome(options=self.options)
         # self.chrome.implicitly_wait(20)
@@ -65,7 +66,7 @@ class DefaultDriver:
     def init(self):
         self.chrome = webdriver.Chrome(options=self.options)
         self.chrome.implicitly_wait(120)
-        # time.sleep(2)
+        time.sleep(2)
 
     def close(self) -> None:
         try:
@@ -118,6 +119,7 @@ class TorDriver(DefaultDriver):
         self.options.add_argument('--no-sandbox')
         self.options.add_argument('--window-size=1280,920')
         self.options.add_argument('--headless')
+        self.options.add_argument('--disable-dev-shm-usage')
         self.options.add_argument('--disable-gpu')
         # self.options.add_argument(f'--proxy-server={self.proxy}')
         self.options.add_argument(f'user-agent={self.ua.random}')

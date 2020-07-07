@@ -39,7 +39,8 @@ ENV PORT 5000
 WORKDIR ${APP_HOME}
 
 COPY . .
-VOLUME ["/vol_logs", "/app/vol_logs"]
+#VOLUME ["/vol_logs", "/app/vol_logs"]
+VOLUME ["/dev/shm", "/dev/shm"]
 
 
 #CMD tor -f /etc/torrc &
