@@ -12,7 +12,7 @@ import logging
 import time
 import psycopg2
 from datetime import datetime
-
+from selenium.common.exceptions import InvalidSessionIdException
 
 def test1(command:str, params:tuple) -> str:
     pass
@@ -23,7 +23,7 @@ def hundreds(x: Union[int, float]) -> int:
 
 
 def timer_logger(func):
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(funcName)s %(process)d:%(processName)s [%(levelname)s] %(message)s', filename='clickbot.log')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(funcName)s %(process)d:%(processName)s [%(levelname)s] %(message)s', filename='./vol_logs/clickbot.log')
     log = logging.getLogger(__name__)
 
     @wraps(func)
@@ -39,12 +39,16 @@ def timer_logger(func):
 
 class DefaultDriver:
 
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(funcName)s %(process)d:%(processName)s [%(levelname)s] %(message)s', filename='clickbot.log')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(funcName)s %(process)d:%(processName)s [%(levelname)s] %(message)s', filename='./vol_logs/clickbot.log')
     log = logging.getLogger(__name__)
 
     def __init__(self, search_words: list):
         self.options = webdriver.ChromeOptions()
         self.options.add_argument(f'user-agent={user_agent_catalina}')
+        self.options.add_argument('--no-sandbox')
+        self.options.add_argument('--window-size=1420,1080')
+        self.options.add_argument('--headless')
+        self.options.add_argument('--disable-gpu')
         # self.chrome = webdriver.Chrome(options=self.options)
         # self.chrome.implicitly_wait(20)
         self.default_url = 'https://yandex.ru/'
@@ -58,6 +62,7 @@ class DefaultDriver:
                               port=Config.database_port) as conn, conn.cursor() as cur:
             cur.execute('''
             insert into adhoc_parser.audit_yandex_bot (url, report_date, parse_time, has_403, waste_time) values (%s, %s, %s, %s, %s)''', (url, date1, date2, error, waste_time))
+        print('INSERT')
 
 
     @timer_logger
@@ -67,7 +72,10 @@ class DefaultDriver:
         time.sleep(2)
 
     def close(self) -> None:
-        self.chrome.close()
+        try:
+            self.chrome.close()
+        except InvalidSessionIdException:
+            pass
 
     @timer_logger
     def take_promotion_urls(self):
@@ -83,6 +91,7 @@ class DefaultDriver:
         time.sleep(2.5)
         self.chrome.find_element_by_xpath('//*[@id="text"]').send_keys(f'{string}\n')
         html = self.chrome.page_source
+        print('FETCH SINGLE PAGE')
         return html
 
     @timer_logger
@@ -162,7 +171,11 @@ class TorDriver(DefaultDriver):
     def __init__(self, search_words: list):
         super().__init__(search_words)
         self.proxy = "socks5://127.0.0.1:9150"
-        self.options.add_argument(f'--proxy-server={self.proxy}')
+        self.options.add_argument('--no-sandbox')
+        self.options.add_argument('--window-size=820,640')
+        self.options.add_argument('--headless')
+        self.options.add_argument('--disable-gpu')
+        # self.options.add_argument(f'--proxy-server={self.proxy}')
         self.options.add_argument(f'user-agent={user_agent_catalina}')
         self.action = None
 
@@ -211,7 +224,7 @@ class TorDriver(DefaultDriver):
                     has_error = 'Y'
                 result_time = round(time.time() - start)
 
-                self.audit(self.chrome.current_url, report_date, parse_time, has_error, result_time)
+                self.audit(self.chrome.current_url, report_date, parse_time, has_error, 100)
             self.log.warning('passed url with yandex.ru/uslugi/ or docs.google.com/forms/')
         except Exception as e:
             self.log.error(f'cant get page info, pass it with ERROR: {e}')
