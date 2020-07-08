@@ -78,6 +78,7 @@ class DefaultDriver:
 
     @timer_logger
     def take_promotion_urls(self):
+        self.array.append('https://fl-bankrotstvo.ru/')
         for x in self.array:
             self.log.warning(x)
         self.log.info(f'count with duplicates: {str(len(self.array))}')
