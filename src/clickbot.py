@@ -146,11 +146,11 @@ class TorDriver(DefaultDriver):
     def __init__(self, search_words: list):
         super().__init__(search_words)
         self.proxy = "socks5://127.0.0.1:9150"
-        # self.options.add_argument('--no-sandbox')
+        self.options.add_argument('--no-sandbox')
         self.options.add_argument('--window-size=1280,920')
-        # self.options.add_argument('--headless')
-        # self.options.add_argument('--disable-dev-shm-usage')
-        # self.options.add_argument('--disable-gpu')
+        self.options.add_argument('--headless')
+        self.options.add_argument('--disable-dev-shm-usage')
+        self.options.add_argument('--disable-gpu')
         self.options.add_argument(f'--proxy-server={self.proxy}')
         self.options.add_argument(f'user-agent={self.ua.random}')
         self.action = None
