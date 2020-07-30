@@ -138,9 +138,6 @@ class DefaultDriver:
             self.get_data_from_html(self.fetch_single_page(i))
 
 
-
-
-
 class TorDriver(DefaultDriver):
 
     def __init__(self, search_words: list):
