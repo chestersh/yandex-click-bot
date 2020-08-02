@@ -60,15 +60,18 @@ kw = [
 ]
 
 while True:
-    prepare = DefaultDriver(kw)
-    prepare.init()
-    prepare.x()
-    data = prepare.take_promotion_urls()
-    prepare.close()
+    try:
+        prepare = DefaultDriver(kw)
+        prepare.init()
+        prepare.x()
+        data = prepare.take_promotion_urls()
+        prepare.close()
 
-    tor = TorDriver(kw)
-    tor.init()
-    for url in data:
-        tor.start(url)
-    tor.close()
-    time.sleep(35)
+        tor = TorDriver(kw)
+        tor.init()
+        for url in data:
+            tor.start(url)
+        tor.close()
+        time.sleep(35)
+    except Exception as e:
+        pass
