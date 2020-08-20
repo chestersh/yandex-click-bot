@@ -1,5 +1,7 @@
-from clickbot import DefaultDriver, TorDriver
+from clickbot import DefaultDriver, TorDriver, log
 import time
+import traceback
+
 
 kw_temp = [
     'банкротство юридических лиц обнинск',
@@ -74,4 +76,5 @@ while True:
         tor.close()
         time.sleep(35)
     except Exception as e:
-        pass
+        # tor.close()
+        log.error(str(e) + traceback.format_exc())

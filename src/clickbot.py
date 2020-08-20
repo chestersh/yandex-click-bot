@@ -1,5 +1,6 @@
 import logging
 import time
+import traceback
 from datetime import datetime
 from functools import wraps
 
@@ -13,19 +14,20 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(name)s %(funcName)s %(process)d:%(processName)s [%(levelname)s] %(message)s',
-                    filename='clickbot.log')
+                    format='%(asctime)s [%(levelname)s] %(name)s %(funcName)s %(process)d:%(processName)s %(message)s',
+                    #filename='clickbot.log',
+                    )
 log = logging.getLogger(__name__)
 
 
 def scroll_page(html):
     html.send_keys(Keys.ESCAPE)
-    for i in range(65):
+    for i in range(100):
         html.send_keys(Keys.ARROW_DOWN)
-        time.sleep(0.3)
-    for i in range(3):
+        time.sleep(0.05)
+    for i in range(6):
         html.send_keys(Keys.PAGE_UP)
-        time.sleep(0.2)
+        time.sleep(0.1)
 
 
 def timer_logger(func):
@@ -51,6 +53,26 @@ def audit(url, date1, date2, error, waste_time):
                     (url, date1, date2, error, waste_time))
 
 
+def get_page_keywords(html):
+    soup = bs(html, 'lxml')
+    try:
+        keywords = soup.find('head').find_all('meta')
+        title = soup.find('head').find('title')
+        log.info(keywords)
+        log.info(f'title from bs4: {str(title)}')
+    except Exception as e:
+        log.error(str(e) + traceback.format_exc())
+
+
+def get_page_description(html):
+    soup = bs(html, 'lxml')
+    try:
+        description = soup.find('head').find_all('meta', name_='description')
+        log.info(description)
+    except Exception as e:
+        log.error(str(e) + traceback.format_exc())
+
+
 class DefaultDriver:
 
     def __init__(self, search_words: list):
@@ -62,7 +84,6 @@ class DefaultDriver:
         self.options.add_argument('--headless')
         self.options.add_argument('--disable-dev-shm-usage')
         self.options.add_argument('--disable-gpu')
-        # self.chrome = webdriver.Chrome(options=self.options)
         # self.chrome.implicitly_wait(20)
         self.default_url = 'https://yandex.ru/'
         self.search_words = search_words
@@ -86,9 +107,9 @@ class DefaultDriver:
 
     @timer_logger
     def take_promotion_urls(self):
-        self.array.append('https://fl-bankrotstvo.ru/')
+        # self.array.append('https://fl-bankrotstvo.ru/')
         for x in self.array:
-            log.warning(x)
+            log.debug(x)
         log.info(f'count with duplicates: {str(len(self.array))}')
         log.info(f'count without duplicates: {str(len(set(self.array)))}')
         return self.array
@@ -118,7 +139,7 @@ class DefaultDriver:
                 if 'yabs.yandex.ru' in array_element.find('div').find('a').get('href'):
                     url = array_element.find('div').find('a').get('href')
                     self.array.append(url)
-
+            self.array.append('https://fl-bankrotstvo.ru/')
         except Exception as e:
             log.error(f'at this moment parser cant find url list from yandex page, pass with ERROR: {e}')
 
@@ -133,19 +154,14 @@ class TorDriver(DefaultDriver):
     def __init__(self, search_words: list):
         super().__init__(search_words)
         self.proxy = "socks5://127.0.0.1:9150"
-        self.options.add_argument('--no-sandbox')
-        self.options.add_argument('--window-size=1280,920')
-        self.options.add_argument('--headless')
-        self.options.add_argument('--disable-dev-shm-usage')
-        self.options.add_argument('--disable-gpu')
-        self.options.add_argument(f'--proxy-server={self.proxy}')
+        # self.options.add_argument(f'--proxy-server={self.proxy}')
         self.options.add_argument(f'user-agent={self.ua.random}')
         self.action = None
 
     def move_with_driver(self, item):
         try:
             self.action.move_to_element(item).perform()
-            time.sleep(0.2)
+            time.sleep(0.1)
         except Exception as e:
             pass
 
@@ -166,7 +182,9 @@ class TorDriver(DefaultDriver):
         self.action = ActionChains(self.chrome)
         try:
             self.chrome.get(url)
-            print(self.chrome.page_source[:100])
+            log.info(f'PAGE TITLE: {self.chrome.title}')
+            get_page_keywords(self.chrome.page_source)
+            # get_page_description(self.chrome.page_source)
             log.info(f'Current url parserd now: {self.chrome.current_url}')
             if 'yandex.ru/uslugi/' not in self.chrome.current_url and 'docs.google.com/forms/' not in self.chrome.current_url:
                 if '403 Forbidden' not in self.chrome.page_source and '502 Bad Gateway' not in self.chrome.page_source:
@@ -175,7 +193,7 @@ class TorDriver(DefaultDriver):
                     page_elements = self.chrome.find_elements_by_css_selector('div[class]')
 
                     scroll_page(full_page)
-                    for element in page_elements[:25]:
+                    for element in page_elements[:10]:
                         self.move_with_driver(element)
                         # self.move_with_javascript(element, full_page)
                 else:
