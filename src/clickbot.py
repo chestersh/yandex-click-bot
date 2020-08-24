@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 import traceback
 from datetime import datetime
@@ -15,9 +16,21 @@ from selenium.webdriver.common.keys import Keys
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(levelname)s] %(name)s %(funcName)s %(process)d:%(processName)s %(message)s',
-                    #filename='clickbot.log',
+                    filename='src/logs/service.log',
                     )
 log = logging.getLogger(__name__)
+
+
+# def quit_driver_and_reap_children(driver):
+#     log.debug('Quitting session: %s' % driver.session_id)
+#     driver.quit()
+#     try:
+#         pid = True
+#         while pid:
+#             pid = os.waitpid(-1, os.WNOHANG)
+#             log.debug("Reaped child: %s" % str(pid))
+#     except ChildProcessError:
+#         pass
 
 
 def scroll_page(html):
@@ -100,10 +113,24 @@ class DefaultDriver:
     def close(self) -> None:
         try:
             self.chrome.close()
+            self.chrome.quit()
         except InvalidSessionIdException as e:
             log.error(f'Error with close driver : {e}')
         except WebDriverException as e:
             log.error(f'Error with close driver : {e}')
+
+    def quit_driver_and_reap_children(self):
+        log.warning('Quitting session: %s' % self.chrome.session_id)
+        self.chrome.quit()
+        try:
+            pid = True
+            while pid:
+                pid = os.waitpid(-1, os.WNOHANG)
+                log.warning("Reaped child: %s" % str(pid))
+        except ChildProcessError:
+            pass
+
+
 
     @timer_logger
     def take_promotion_urls(self):
@@ -120,7 +147,6 @@ class DefaultDriver:
         time.sleep(2.5)
         self.chrome.find_element_by_xpath('//*[@id="text"]').send_keys(f'{string}\n')
         html = self.chrome.page_source
-        print('FETCH SINGLE PAGE')
         return html
 
     @timer_logger

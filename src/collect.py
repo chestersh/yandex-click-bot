@@ -1,7 +1,7 @@
-from clickbot import DefaultDriver, TorDriver, log
 import time
 import traceback
 
+from clickbot import DefaultDriver, TorDriver, log
 
 kw_temp = [
     'банкротство юридических лиц обнинск',
@@ -61,20 +61,23 @@ kw = [
 
 ]
 
-while True:
-    try:
-        prepare = DefaultDriver(kw)
-        prepare.init()
-        prepare.x()
-        data = prepare.take_promotion_urls()
-        prepare.close()
+if __name__ == '__main__':
+    while True:
+        try:
+            prepare = DefaultDriver(kw)
+            prepare.init()
+            prepare.x()
+            data = prepare.take_promotion_urls()
+            prepare.close()
 
-        tor = TorDriver(kw)
-        tor.init()
-        for url in data:
-            tor.start(url)
-        tor.close()
-        time.sleep(35)
-    except Exception as e:
-        # tor.close()
-        log.error(str(e) + traceback.format_exc())
+            tor = TorDriver(kw)
+            tor.init()
+            for url in data:
+                tor.start(url)
+            # tor.close()
+            tor.quit_driver_and_reap_children()
+            time.sleep(35)
+        except Exception as e:
+            # tor.close()
+            tor.quit_driver_and_reap_children()
+            log.error(str(e) + traceback.format_exc())
