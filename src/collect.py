@@ -64,13 +64,13 @@ kw = [
 if __name__ == '__main__':
     while True:
         try:
-            prepare = DefaultDriver(test)
+            prepare = DefaultDriver(kw)
             prepare.init()
             prepare.x()
             data = prepare.take_promotion_urls()
             prepare.close()
 
-            tor = TorDriver(test)
+            tor = TorDriver(kw)
             tor.init()
             for url in data:
                 tor.start(url)
