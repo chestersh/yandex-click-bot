@@ -17,6 +17,7 @@ from selenium.webdriver.common.keys import Keys
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(levelname)s] %(name)s %(funcName)s %(process)d:%(processName)s %(message)s',
                     filename='src/logs/service.log',
+                    # filename='logs/service.log',
                     )
 log = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ def timer_logger(func):
         start = time.time()
         result = func(*args, **kwargs)
         result_time = time.time() - start
-        log.info(f'function: {func.__name__} is worked {str(result_time)} sec')
+        log.info(f'function: {func.__name__} is worked {str(round(result_time, 2))} sec')
         return result
 
     return timer
@@ -130,8 +131,6 @@ class DefaultDriver:
         except ChildProcessError:
             pass
 
-
-
     @timer_logger
     def take_promotion_urls(self):
         # self.array.append('https://fl-bankrotstvo.ru/')
@@ -146,6 +145,7 @@ class DefaultDriver:
         self.chrome.get(self.default_url)
         time.sleep(2.5)
         self.chrome.find_element_by_xpath('//*[@id="text"]').send_keys(f'{string}\n')
+        time.sleep(1.5)
         html = self.chrome.page_source
         return html
 
