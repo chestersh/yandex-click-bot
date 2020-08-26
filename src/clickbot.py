@@ -6,6 +6,7 @@ from datetime import datetime
 from functools import wraps
 
 import psycopg2
+import requests
 from bs4 import BeautifulSoup as bs
 from config import Config
 from fake_useragent import UserAgent
@@ -20,18 +21,6 @@ logging.basicConfig(level=logging.INFO,
                     # filename='logs/service.log',
                     )
 log = logging.getLogger(__name__)
-
-
-# def quit_driver_and_reap_children(driver):
-#     log.debug('Quitting session: %s' % driver.session_id)
-#     driver.quit()
-#     try:
-#         pid = True
-#         while pid:
-#             pid = os.waitpid(-1, os.WNOHANG)
-#             log.debug("Reaped child: %s" % str(pid))
-#     except ChildProcessError:
-#         pass
 
 
 def scroll_page(html):
@@ -56,35 +45,26 @@ def timer_logger(func):
     return timer
 
 
-def audit(url, date1, date2, error, waste_time):
+def audit(url, report_date, parse_time, has_error, waste_time, title, ip, meta):
     with psycopg2.connect(dbname=Config.database_name,
                           user=Config.database_login,
                           password=Config.database_password,
                           host=Config.database_url,
                           port=Config.database_port) as conn, conn.cursor() as cur:
         cur.execute('''
-        insert into adhoc_parser.audit_yandex_bot (url, report_date, parse_time, has_403, waste_time) values (%s, %s, %s, %s, %s)''',
-                    (url, date1, date2, error, waste_time))
+        insert into adhoc_parser.audit_yandex_bot (url, report_date, parse_time, has_403, waste_time, title, ip, meta) values (%s, %s, %s, %s, %s, %s, %s, %s)''',
+                    (url, report_date, parse_time, has_error, waste_time, title, ip, meta))
 
 
-def get_page_keywords(html):
+def get_meta_data(html: str):
     soup = bs(html, 'lxml')
     try:
-        keywords = soup.find('head').find_all('meta')
-        title = soup.find('head').find('title')
-        log.info(keywords)
-        log.info(f'title from bs4: {str(title)}')
+        meta = soup.find('head').find_all('meta')
+        log.info(meta)
+        return meta
     except Exception as e:
         log.error(str(e) + traceback.format_exc())
-
-
-def get_page_description(html):
-    soup = bs(html, 'lxml')
-    try:
-        description = soup.find('head').find_all('meta', name_='description')
-        log.info(description)
-    except Exception as e:
-        log.error(str(e) + traceback.format_exc())
+        return None
 
 
 class DefaultDriver:
@@ -98,15 +78,19 @@ class DefaultDriver:
         self.options.add_argument('--headless')
         self.options.add_argument('--disable-dev-shm-usage')
         self.options.add_argument('--disable-gpu')
-        # self.chrome.implicitly_wait(20)
         self.default_url = 'https://yandex.ru/'
         self.search_words = search_words
         self.chrome = None
-        # self.chrome.get(self.default_url)
         self.array = []
 
+    @staticmethod
+    def get_my_public_id() -> str:
+        data = requests.get('http://icanhazip.com')
+        ip = data.text.strip()
+        return ip
+
     @timer_logger
-    def init(self):
+    def init(self) -> None:
         self.chrome = webdriver.Chrome(options=self.options)
         self.chrome.implicitly_wait(120)
         time.sleep(2)
@@ -120,7 +104,7 @@ class DefaultDriver:
         except WebDriverException as e:
             log.error(f'Error with close driver : {e}')
 
-    def quit_driver_and_reap_children(self):
+    def quit_driver_and_reap_children(self) -> None:
         log.warning('Quitting session: %s' % self.chrome.session_id)
         self.chrome.quit()
         try:
@@ -132,7 +116,7 @@ class DefaultDriver:
             pass
 
     @timer_logger
-    def take_promotion_urls(self):
+    def take_promotion_urls(self) -> list:
         # self.array.append('https://fl-bankrotstvo.ru/')
         for x in self.array:
             log.debug(x)
@@ -141,7 +125,7 @@ class DefaultDriver:
         return self.array
 
     @timer_logger
-    def fetch_single_page(self, string):
+    def fetch_single_page(self, string) -> str:
         self.chrome.get(self.default_url)
         time.sleep(2.5)
         self.chrome.find_element_by_xpath('//*[@id="text"]').send_keys(f'{string}\n')
@@ -150,7 +134,7 @@ class DefaultDriver:
         return html
 
     @timer_logger
-    def get_data_from_html(self, raw_html):
+    def get_data_from_html(self, raw_html) -> None:
         soup = bs(raw_html, 'lxml')
         try:
             search_array = soup.find('div', class_='content__left').find('ul').find_all('li')
@@ -167,7 +151,8 @@ class DefaultDriver:
                     self.array.append(url)
             self.array.append('https://fl-bankrotstvo.ru/')
         except Exception as e:
-            log.error(f'at this moment parser cant find url list from yandex page, pass with ERROR: {e}')
+            log.error(
+                f'at this moment parser cant find url list from yandex page, pass with ERROR: {str(e) + traceback.format_exc()}')
 
     @timer_logger
     def x(self):
@@ -184,14 +169,14 @@ class TorDriver(DefaultDriver):
         self.options.add_argument(f'user-agent={self.ua.random}')
         self.action = None
 
-    def move_with_driver(self, item):
+    def move_with_driver(self, item) -> None:
         try:
             self.action.move_to_element(item).perform()
             time.sleep(0.1)
         except Exception as e:
             pass
 
-    def move_with_javascript(self, item, html):
+    def move_with_javascript(self, item, html) -> None:
         try:
             self.chrome.execute_script(f'"arguments[0].scrollIntoView();", {item}')
             self.action.move_to_element(item).perform()
@@ -201,16 +186,17 @@ class TorDriver(DefaultDriver):
             pass
 
     @timer_logger
-    def start(self, url):
+    def start(self, url) -> None:
+        ip = self.get_my_public_id()
         report_date = datetime.today().strftime('%Y-%m-%d')
         parse_time = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         start = time.time()
         self.action = ActionChains(self.chrome)
         try:
             self.chrome.get(url)
-            log.info(f'PAGE TITLE: {self.chrome.title}')
-            get_page_keywords(self.chrome.page_source)
-            # get_page_description(self.chrome.page_source)
+            title = self.chrome.title
+            log.info(f'Title from this page: {title}')
+            meta = str(get_meta_data(self.chrome.page_source))
             log.info(f'Current url parserd now: {self.chrome.current_url}')
             if 'yandex.ru/uslugi/' not in self.chrome.current_url and 'docs.google.com/forms/' not in self.chrome.current_url:
                 if '403 Forbidden' not in self.chrome.page_source and '502 Bad Gateway' not in self.chrome.page_source:
@@ -221,18 +207,14 @@ class TorDriver(DefaultDriver):
                     scroll_page(full_page)
                     for element in page_elements[:10]:
                         self.move_with_driver(element)
-                        # self.move_with_javascript(element, full_page)
                 else:
                     log.error('403 Forbidden / 502 Bad Gateway')
                     has_error = 'Y'
                 result_time = round(time.time() - start)
 
-                audit(self.chrome.current_url, report_date, parse_time, has_error, result_time)
+                audit(self.chrome.current_url, report_date, parse_time, has_error, result_time, title, ip, meta)
             else:
                 log.warning('passed url with yandex.ru/uslugi/ or docs.google.com/forms/')
         except InvalidSessionIdException as e:
-            has_error = 'F'
-            # TODO try add self.init()
-            # print((f'cant get page info, pass it with ERROR: {e}'))
-            log.error(f'cant get page info, pass it with ERROR: {e}')
-            audit('invalid session id', report_date, parse_time, has_error, 0)
+            log.error(f'cant get page info, pass it with ERROR: {str(e) + traceback.format_exc()}')
+            audit('invalid session id', report_date, parse_time, 'F', 0, None, ip, None)
