@@ -50,6 +50,18 @@ docker run \
 ```
 
 
+```shell script
+docker build -t image-bot:0.3 . ; \
+docker run \
+--name yandex-bot-test \
+-e TZ=Europe/Moscow \
+--shm-size="1g" -d \
+--restart=always \
+-v /home/ubpc/docker-bot/yandex-click-bot/src/logs:/app/src/logs/ \
+--network host \
+image-bot:0.3
+```
+
 
 ### pip install
 

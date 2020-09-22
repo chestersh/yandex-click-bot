@@ -164,7 +164,7 @@ class TorDriver(DefaultDriver):
 
     def __init__(self, search_words: list):
         super().__init__(search_words)
-        self.proxy = "socks5://127.0.0.1:9150"
+        self.proxy = "socks5://localhost:9050"
         # self.options.add_argument(f'--proxy-server={self.proxy}')
         self.options.add_argument(f'user-agent={self.ua.random}')
         self.action = None

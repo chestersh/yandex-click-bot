@@ -73,10 +73,10 @@ if __name__ == '__main__':
             tor.init()
             for url in data:
                 tor.start(url)
-            # tor.close()
+            tor.close()
             tor.quit_driver_and_reap_children()
             time.sleep(35)
         except Exception as e:
-            # tor.close()
+            tor.close()
             tor.quit_driver_and_reap_children()
             log.error(str(e) + traceback.format_exc())
