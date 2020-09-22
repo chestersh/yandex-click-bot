@@ -16,7 +16,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s [%(levelname)s] %(name)s %(funcName)s %(process)d:%(processName)s %(message)s',
+                    format='%(asctime)s [%(levelname)s] %(name)s %(funcName)s - %(message)s',
                     filename='src/logs/service.log',
                     # filename='logs/service.log',
                     )
@@ -117,7 +117,6 @@ class DefaultDriver:
 
     @timer_logger
     def take_promotion_urls(self) -> list:
-        # self.array.append('https://fl-bankrotstvo.ru/')
         for x in self.array:
             log.debug(x)
         log.info(f'count with duplicates: {str(len(self.array))}')
@@ -150,6 +149,7 @@ class DefaultDriver:
                     url = array_element.find('div').find('a').get('href')
                     self.array.append(url)
             self.array.append('https://fl-bankrotstvo.ru/')
+            self.array.append('https://quiz.fl-bankrotstvo.ru/')
         except Exception as e:
             log.error(
                 f'at this moment parser cant find url list from yandex page, pass with ERROR: {str(e) + traceback.format_exc()}')

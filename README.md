@@ -13,6 +13,10 @@ create table adhoc_parser.audit_yandex_bot (
 	waste_time integer not null,
 	CONSTRAINT audit_pkey PRIMARY KEY (id, report_date)
 ) partition by range (report_date);
+-- new fields
+alter table adhoc_parser.audit_yandex_bot add column title varchar(255) null;
+alter table adhoc_parser.audit_yandex_bot add column ip varchar(255) null;
+alter table adhoc_parser.audit_yandex_bot add column meta text null;
 ```
 
 ### create partitions with T+50
@@ -34,11 +38,22 @@ begin
 end 
 $do$
 ```
+### RUN:
+```shell script
+docker build -t image-bot:0.4 . ; \
+docker run \
+--name yandex-bot-test \
+-e TZ=Europe/Moscow \
+--shm-size="1g" -d \
+--restart=always \
+-v /home/www/code/yandex-click-bot/src/logs:/app/src/logs/ image-bot:0.4
+```
+
+
 
 ### pip install
 
 ```bash
 python3 -m venv env
-
 pip install -r req.txt
 ```
