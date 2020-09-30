@@ -148,8 +148,8 @@ class DefaultDriver:
                 if 'yabs.yandex.ru' in array_element.find('div').find('a').get('href'):
                     url = array_element.find('div').find('a').get('href')
                     self.array.append(url)
-            self.array.append('https://fl-bankrotstvo.ru/')
-            self.array.append('https://quiz.fl-bankrotstvo.ru/')
+            # self.array.append('https://fl-bankrotstvo.ru/')
+            # self.array.append('https://quiz.fl-bankrotstvo.ru/')
         except Exception as e:
             log.error(
                 f'at this moment parser cant find url list from yandex page, pass with ERROR: {str(e) + traceback.format_exc()}')
